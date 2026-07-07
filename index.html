@@ -83,10 +83,14 @@
   .histItem {
     background: var(--card); border: 1px solid var(--border); border-radius: 10px;
     padding: 10px 12px; margin-bottom: 6px; cursor: pointer; font-size: 15px;
-    display: flex; gap: 8px; align-items: baseline;
   }
+  .histItem .hTop { display: flex; gap: 8px; align-items: baseline; }
   .histItem .hLang { font-size: 10px; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: 2px 6px; border-radius: 6px; flex-shrink: 0; }
   .histItem .hText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .histItem .hTrans {
+    font-size: 13px; color: var(--muted); margin-top: 3px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -231,7 +235,7 @@ async function translate(text) {
       gTranslate(text, srcLang, t)));
     setStatus(usedFallback ? '⚠️ Google endpoint unavailable — using backup service (quality may be lower).' : '');
     for (let i = 0; i < 2; i++) showResult(i, targets[i], results[i]);
-    addHistory(text, srcLang);
+    addHistory(text, srcLang, { [targets[0]]: results[0], [targets[1]]: results[1] });
   } catch (err) {
     setStatus('Error: ' + err.message, true);
   } finally {
@@ -295,9 +299,9 @@ function setStatus(msg, isError) {
 }));
 
 /* ---------- history ---------- */
-function addHistory(text, lang) {
+function addHistory(text, lang, results) {
   history = history.filter(h => !(h.t === text && h.l === lang));
-  history.unshift({ t: text, l: lang });
+  history.unshift({ t: text, l: lang, r: results });
   history = history.slice(0, 100);
   localStorage.setItem('tri_hist', JSON.stringify(history));
   renderHistory();
@@ -307,17 +311,35 @@ function renderHistory() {
   history.forEach(h => {
     const d = document.createElement('div');
     d.className = 'histItem';
+    const top = document.createElement('div');
+    top.className = 'hTop';
     const tag = document.createElement('span');
     tag.className = 'hLang';
     tag.textContent = LANGS[h.l];
     const tx = document.createElement('span');
     tx.className = 'hText';
     tx.textContent = h.t;
-    d.append(tag, tx);
+    top.append(tag, tx);
+    d.append(top);
+    if (h.r) {
+      Object.keys(h.r).forEach(lang => {
+        const line = document.createElement('div');
+        line.className = 'hTrans';
+        line.textContent = h.r[lang].main;
+        d.append(line);
+      });
+    }
     d.addEventListener('click', () => {
       srcLang = h.l; renderTabs();
+      localStorage.setItem('tri_lang', srcLang);
       $('input').value = h.t;
-      translate(h.t);
+      if (h.r) {
+        // restore saved results instantly — no internet call needed
+        setStatus('');
+        Object.keys(h.r).forEach((lang, i) => showResult(i, lang, h.r[lang]));
+      } else {
+        translate(h.t); // old entry without saved results
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
     $('history').appendChild(d);
