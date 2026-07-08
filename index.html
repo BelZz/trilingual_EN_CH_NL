@@ -55,10 +55,11 @@
     cursor: pointer;
   }
   #goBtn:disabled { opacity: .5; }
-  #clearBtn {
+  #clearBtn, #speakInput {
     padding: 13px 16px; font-size: 15px; background: var(--card); color: var(--muted);
     border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer;
   }
+  #speakInput { color: var(--accent); line-height: 0; }
   #status { text-align: center; font-size: 13px; color: var(--muted); min-height: 20px; padding: 6px 0; }
   #status.error { color: #dc2626; }
   .result {
@@ -109,6 +110,7 @@
 
 <div class="actions">
   <button id="goBtn">Translate</button>
+  <button id="speakInput" title="Pronounce input"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
   <button id="clearBtn">✕</button>
 </div>
 
@@ -359,6 +361,10 @@ $('input').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); translate($('input').value); }
 });
 $('clearBtn').addEventListener('click', () => { $('input').value = ''; $('input').focus(); });
+$('speakInput').addEventListener('click', () => {
+  const t = $('input').value.trim();
+  if (t) speak(t, srcLang);
+});
 </script>
 </body>
 </html>
